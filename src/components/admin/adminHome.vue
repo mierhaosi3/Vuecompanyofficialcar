@@ -71,15 +71,26 @@
               <el-form ref="userProfileForm" :model="editForm" label-width="80px" v-if="currentMenu === 'userProfile'">
                 <el-table :data="userProfileData" stripe>
                   <el-table-column prop="userid" label="用户ID"></el-table-column>
-                  <el-table-column prop="username" label="用户名"></el-table-column>
+                  <el-table-column prop="username" label="用户名">
+                    <template #default="{ row }">
+                      <span v-if="!row.isEditing">{{ row.username }}</span>
+                      <el-input v-model="row.username" v-else></el-input>
+                    </template>
+                  </el-table-column>
+
                   <el-table-column prop="usertype" label="职务"></el-table-column>
-                  <el-table-column prop="name" label="姓名">
+                  <el-table-column prop="name" label="详细信息">
                     <template #default="{ row }">
                       <span v-if="!row.isEditing">{{ row.name }}</span>
                       <el-input v-model="row.name" v-else></el-input>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="avatar" label="详细信息"></el-table-column>
+                  <el-table-column prop="avatar" label="姓名">
+                    <template #default="{ row }">
+                      <span v-if="!row.isEditing">{{ row.avatar }}</span>
+                      <el-input v-model="row.avatar" v-else></el-input>
+                    </template>
+                  </el-table-column>
                   <el-table-column label="操作">
                     <template #default="{ row }">
                       <el-button type="primary" size="small" @click="handleEdit(row)" v-if="!row.isEditing">编辑</el-button>
@@ -95,17 +106,49 @@
               <h3>车队表</h3>
               <el-table :data="fleetData" stripe>
                 <el-table-column prop="fleetid" label="车队ID"></el-table-column>
-                <el-table-column prop="fleetname" label="车队名称"></el-table-column>
+                <el-table-column prop="fleetname" label="车队名称">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.fleetname }}</span>
+                    <el-input v-model="row.fleetname" v-else></el-input>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="captainid" label="队长ID"></el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="FleethandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
+                    <el-button type="danger" size="small" @click="FleethandleRemove(row)">删除</el-button>
+                    <el-button type="success" size="small" @click="FleethandleSave(row)" v-if="row.isEditing">保存</el-button>
+                    <el-button type="info" size="small" @click="FleethandleCancel(row)" v-if="row.isEditing">取消</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </template>
             <template v-else-if="currentMenu === 'vehicle'">
               <h3>车辆表</h3>
               <el-table :data="vehicleData" stripe>
                 <el-table-column prop="vehicleid" label="车辆ID"></el-table-column>
-                <el-table-column prop="vehicletype" label="车辆类型"></el-table-column>
-                <el-table-column prop="fleetid" label="所属车队ID"></el-table-column>
+                <el-table-column prop="vehicletype" label="车辆类型">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.vehicletype }}</span>
+                    <el-input v-model="row.vehicletype" v-else></el-input>
+                  </template>
+                </el-table-column>
+
+                <el-table-column prop="fleetid" label="所属车队ID">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.fleetid }}</span>
+                    <el-input v-model="row.fleetid" v-else></el-input>
+                  </template>
+                </el-table-column>
                 <el-table-column prop="captainid" label="队长名称"></el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="VehiclehandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
+                    <el-button type="danger" size="small" @click="VehiclehandleRemove(row)">删除</el-button>
+                    <el-button type="success" size="small" @click="VehiclehandleSave(row)" v-if="row.isEditing">保存</el-button>
+                    <el-button type="info" size="small" @click="VehiclehandleCancel(row)" v-if="row.isEditing">取消</el-button>
+                  </template>
+                </el-table-column>
 
               </el-table>
             </template>
@@ -113,8 +156,26 @@
               <h3>司机表</h3>
               <el-table :data="driverData" stripe>
                 <el-table-column prop="driverid" label="司机ID"></el-table-column>
-                <el-table-column prop="name" label="姓名"></el-table-column>
-                <el-table-column prop="fleetid" label="所属车队ID"></el-table-column>
+                <el-table-column prop="name" label="姓名">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.name }}</span>
+                    <el-input v-model="row.name" v-else></el-input>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="fleetid" label="所属车队ID">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.fleetid }}</span>
+                    <el-input v-model="row.fleetid" v-else></el-input>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="DriverhandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
+                    <el-button type="danger" size="small" @click="DriverhandleRemove(row)">删除</el-button>
+                    <el-button type="success" size="small" @click="DriverhandleSave(row)" v-if="row.isEditing">保存</el-button>
+                    <el-button type="info" size="small" @click="DriverhandleCancel(row)" v-if="row.isEditing">取消</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </template>
             <template v-else-if="currentMenu === 'carRequest'">
@@ -126,7 +187,20 @@
                 <el-table-column prop="passengercount" label="乘客数量"></el-table-column>
                 <el-table-column prop="vehicletype" label="车辆类型"></el-table-column>
                 <el-table-column prop="starttime" label="开始时间"></el-table-column>
-                <el-table-column prop="status" label="状态"></el-table-column>
+                <el-table-column prop="status" label="状态">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.status }}</span>
+                    <el-input v-model="row.status" v-else></el-input>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="CarRequesthandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
+                    <el-button type="danger" size="small" @click="CarRequesthandleRemove(row)">删除</el-button>
+                    <el-button type="success" size="small" @click="CarRequesthandleSave(row)" v-if="row.isEditing">保存</el-button>
+                    <el-button type="info" size="small" @click="CarRequesthandleCancel(row)" v-if="row.isEditing">取消</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </template>
             <template v-else-if="currentMenu === 'dispatchProcess'">
@@ -174,6 +248,8 @@
   </template>
   
   <script>
+  import qs from 'qs';
+
   export default {
     data() {
       return {
@@ -251,12 +327,13 @@
       handleEdit(row) {
         // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
         row.isEditing = true;
+        console.log('row',row)
       },
       handleRemove(row) {
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.$axios.delete(`/approvalrecords/${row.userid}`)
+        this.$axios.delete(`/user/${row.userid}`)
           .then(() => {
             // 删除成功后，从 userProfileData 数组中移除对应的行数据
             const index = this.userProfileData.findIndex(item => item.userid === row.userid);
@@ -273,7 +350,10 @@
         // 执行保存操作
         // 发送请求到后端，更新对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.$axios.put(`/approvalrecords/${row.userid}`, row)
+        console.log(row)
+        const encodedName = encodeURIComponent(row.name).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
+        this.axios.post(`/user/${row.userid}/avatar`, decodedName)
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -282,14 +362,35 @@
             // 处理错误
             console.error(error);
           });
+
+        const encodedName2 = encodeURIComponent(row.username).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName2 = decodeURIComponent(encodedName2).trim(); // 解码并修剪字符串
+        this.axios.post(`/user/${row.userid}/username`, decodedName2)
+        .then(() => {
+          // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+          row.isEditing = false;
+        })
+        .catch(error => {
+          // 处理错误
+          console.error(error);
+        });
+
+        const encodedName3 = encodeURIComponent(row.avatar).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName3 = decodeURIComponent(encodedName3).trim(); // 解码并修剪字符串
+        this.axios.post(`/user/${row.userid}/name`, decodedName3)
+        .then(() => {
+          // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+          row.isEditing = false;
+        })
+        .catch(error => {
+          // 处理错误
+          console.error(error);
+        });
       },
       handleCancel(row) {
         // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
         row.isEditing = false;
       },
-
-
-
 
 
       async showFleetTable() {
@@ -308,6 +409,51 @@
         }
         this.jsondata=[];
       },
+      FleethandleEdit(row) {
+        // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
+        row.isEditing = true;
+        console.log('row',row)
+      },
+      FleethandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        this.axios.delete(`/fleet/${row.userid}`)
+          .then(() => {
+            // 删除成功后，从 userProfileData 数组中移除对应的行数据
+            const index = this.userProfileData.findIndex(item => item.userid === row.userid);
+            if (index !== -1) {
+              this.userProfileData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      FleethandleSave(row) {
+        // 执行保存操作
+        // 发送请求到后端，更新对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        const encodedName2 = encodeURIComponent(row.fleetname).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName2 = decodeURIComponent(encodedName2).trim(); // 解码并修剪字符串
+        this.axios.post(`/fleet/${row.fleetid}/fleetname`, decodedName2)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      FleethandleCancel(row) {
+        // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
+        row.isEditing = false;
+      },
+
+
+
       async showVehicleTable() {
         this.currentMenu = 'vehicle';
         // 请求车辆表数据并赋值给vehicleData
@@ -320,6 +466,68 @@
         }
         this.jsondata=[];
       },
+      VehiclehandleEdit(row) {
+        // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
+        row.isEditing = true;
+        console.log('row',row)
+      },
+      VehiclehandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        this.axios.delete(`/fleet/${row.userid}`)
+          .then(() => {
+            // 删除成功后，从 userProfileData 数组中移除对应的行数据
+            const index = this.userProfileData.findIndex(item => item.userid === row.userid);
+            if (index !== -1) {
+              this.userProfileData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      VehiclehandleSave(row) {
+        // 执行保存操作
+        // 发送请求到后端，更新对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        const encodedName = encodeURIComponent(row.vehicletype).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
+        console.log('vehicletype',decodedName)
+        this.axios.post(`/vehicles/${row.vehicleid}/VehicleType`, decodedName)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+
+          const config = {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          };
+          this.axios.post(`/vehicles/${row.vehicleid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+      },
+      VehiclehandleCancel(row) {
+        // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
+        row.isEditing = false;
+      },
+
+
+
+
       async showDriverTable() {
         this.currentMenu = 'driver';
         // 请求司机表数据并赋值给driverData
@@ -337,6 +545,68 @@
         }
         this.jsondata=[];
       },
+      DriverhandleEdit(row) {
+        // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
+        row.isEditing = true;
+        console.log('row',row)
+      },
+      DriverhandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        this.axios.delete(`/fleet/${row.userid}`)
+          .then(() => {
+            // 删除成功后，从 userProfileData 数组中移除对应的行数据
+            const index = this.userProfileData.findIndex(item => item.userid === row.userid);
+            if (index !== -1) {
+              this.userProfileData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      DriverhandleSave(row) {
+        // 执行保存操作
+        // 发送请求到后端，更新对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        const encodedName = encodeURIComponent(row.name).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
+        console.log('name',decodedName)
+        this.axios.post(`/drivers/${row.driverid}/name`, decodedName)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+
+          const config = {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          };
+          this.axios.post(`/vehicles/${row.driverid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+      },
+      DriverhandleCancel(row) {
+        // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
+        row.isEditing = false;
+      },
+
+
+
+
       formatDateTime() {
         // 使用逗号分隔的字符串拆分为数组
         const dateTimeArray = this.Stringdate.split(',');
@@ -390,6 +660,52 @@
         this.Stringdate='';
         this.jsondata=[];
       },
+
+
+      CarRequesthandleEdit(row) {
+        // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
+        row.isEditing = true;
+        console.log('row',row)
+      },
+      CarRequesthandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        this.axios.delete(`/fleet/${row.userid}`)
+          .then(() => {
+            // 删除成功后，从 userProfileData 数组中移除对应的行数据
+            const index = this.userProfileData.findIndex(item => item.userid === row.userid);
+            if (index !== -1) {
+              this.userProfileData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      CarRequesthandleSave(row) {
+        // 执行保存操作
+        // 发送请求到后端，更新对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        const encodedName = encodeURIComponent(row.status).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
+        console.log('status',decodedName)
+        this.axios.post(`/carrequests/${row.requestid}/status`, decodedName)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+      },
+      CarRequesthandleCancel(row) {
+        // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
+        row.isEditing = false;
+      },
+
       async showDispatchProcessTable() {
         this.currentMenu = 'dispatchProcess';
         // 请求派车流程表数据并赋值给dispatchProcessData

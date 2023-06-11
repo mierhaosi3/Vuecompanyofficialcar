@@ -12,6 +12,7 @@
     "core-js": "^3.8.3",
     "element-plus": "^2.3.6",
     "element-ui": "^2.15.13",
+    "qs": "^6.11.2",
     "vue": "^3.2.13",
     "vue-axios": "^3.5.2",
     "vue-router": "^4.2.2",

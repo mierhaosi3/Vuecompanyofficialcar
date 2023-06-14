@@ -5,6 +5,7 @@ export const store = createStore({
     mutations: {},
     state: {
         UserType:[],
+        userid:'',
     },
 
 })

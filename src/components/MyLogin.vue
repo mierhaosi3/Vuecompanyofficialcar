@@ -114,10 +114,20 @@ export default {
             if (res && res.data) {
               // 第二个请求的响应数据存在，进行存储操作
               this.$store.state.UserType = res.data.usertype;
+              this.$store.state.userid = res.data.userid;
+
               if(this.$store.state.UserType=='管理员'){
                 console.log(this.$store.state.UserType)
                 // 跳转页面到首页
                 this.$router.push("/adminHome");
+              }else if(this.$store.state.UserType=='车队队长'){
+                console.log(this.$store.state.UserType)
+                // 跳转页面到首页
+                this.$router.push("/MyExamine");
+              }else if(this.$store.state.UserType=='员工'||this.$store.state.UserType=='领导'){
+                console.log(this.$store.state.UserType)
+                // 跳转页面到首页
+                this.$router.push("/UserHome");
               }
               // 显示后端响应的成功信息
               this.$message({

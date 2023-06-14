@@ -7,7 +7,7 @@
               <template #title>
                 <el-icon><message /></el-icon>用户组
               </template>
-              <el-menu-item index="1-1" @click="showUserProfileTable">个人信息表</el-menu-item>
+              <el-menu-item index="1-1" @click="showUserProfileTable" ref="userProfileMenuItem">个人信息表</el-menu-item>
               <!-- 其他个人信息表菜单项 -->
             </el-sub-menu>
             <el-sub-menu index="2">
@@ -66,8 +66,14 @@
             <!-- 根据当前选中的菜单项显示对应的内容 -->
             <template v-if="currentMenu === 'userProfile'">
               <h3>个人信息表</h3>
-              <el-button type="primary" size="small" class="table-header" @click="handleAdd">新增</el-button>
-
+              <div class="search-container">
+                <el-button type="primary" size="small" class="table-header" @click="handleAdd" style="height: 32px;">新增</el-button>
+                <div class="search-wrapper">
+                  <el-input v-model="searchValue" placeholder="请输入职务或用户名" class="search-input"></el-input>
+                  <el-button type="primary" size="small" @click="handleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+              </div>
+              
               <el-form ref="userProfileForm" :model="editForm" label-width="80px" v-if="currentMenu === 'userProfile'">
                 <el-table :data="userProfileData" stripe>
                   <el-table-column prop="userid" label="用户ID"></el-table-column>
@@ -94,7 +100,6 @@
                   <el-table-column label="操作">
                     <template #default="{ row }">
                       <el-button type="primary" size="small" @click="handleEdit(row)" v-if="!row.isEditing">编辑</el-button>
-                      <el-button type="danger" size="small" @click="handleRemove(row)">删除</el-button>
                       <el-button type="success" size="small" @click="handleSave(row)" v-if="row.isEditing">保存</el-button>
                       <el-button type="info" size="small" @click="handleCancel(row)" v-if="row.isEditing">取消</el-button>
                     </template>
@@ -104,6 +109,12 @@
             </template>            
             <template v-else-if="currentMenu === 'fleet'">
               <h3>车队表</h3>
+              <div class="search-container">
+                <div class="search-wrapper">
+                  <el-input v-model="searchValue" placeholder="请输入车队名称" class="search-input"></el-input>
+                  <el-button type="primary" size="small" @click="FleethandleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+              </div>
               <el-table :data="fleetData" stripe>
                 <el-table-column prop="fleetid" label="车队ID"></el-table-column>
                 <el-table-column prop="fleetname" label="车队名称">
@@ -116,7 +127,7 @@
                 <el-table-column label="操作">
                   <template #default="{ row }">
                     <el-button type="primary" size="small" @click="FleethandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
-                    <el-button type="danger" size="small" @click="FleethandleRemove(row)">删除</el-button>
+                    <!-- <el-button type="danger" size="small" @click="FleethandleRemove(row)">删除</el-button> -->
                     <el-button type="success" size="small" @click="FleethandleSave(row)" v-if="row.isEditing">保存</el-button>
                     <el-button type="info" size="small" @click="FleethandleCancel(row)" v-if="row.isEditing">取消</el-button>
                   </template>
@@ -125,6 +136,12 @@
             </template>
             <template v-else-if="currentMenu === 'vehicle'">
               <h3>车辆表</h3>
+              <div class="search-container">
+                <div class="search-wrapper">
+                  <el-input v-model="searchValue" placeholder="请输入车队名" class="search-input"></el-input>
+                  <el-button type="primary" size="small" @click="VehiclehandleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+              </div>
               <el-table :data="vehicleData" stripe>
                 <el-table-column prop="vehicleid" label="车辆ID"></el-table-column>
                 <el-table-column prop="vehicletype" label="车辆类型">
@@ -144,7 +161,7 @@
                 <el-table-column label="操作">
                   <template #default="{ row }">
                     <el-button type="primary" size="small" @click="VehiclehandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
-                    <el-button type="danger" size="small" @click="VehiclehandleRemove(row)">删除</el-button>
+                    <!-- <el-button type="danger" size="small" @click="VehiclehandleRemove(row)">删除</el-button> -->
                     <el-button type="success" size="small" @click="VehiclehandleSave(row)" v-if="row.isEditing">保存</el-button>
                     <el-button type="info" size="small" @click="VehiclehandleCancel(row)" v-if="row.isEditing">取消</el-button>
                   </template>
@@ -154,6 +171,12 @@
             </template>
             <template v-else-if="currentMenu === 'driver'">
               <h3>司机表</h3>
+              <div class="search-container">
+                <div class="search-wrapper">
+                  <el-input v-model="searchValue" placeholder="请输入司机名称" class="search-input"></el-input>
+                  <el-button type="primary" size="small" @click="DriverhandleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+              </div>
               <el-table :data="driverData" stripe>
                 <el-table-column prop="driverid" label="司机ID"></el-table-column>
                 <el-table-column prop="name" label="姓名">
@@ -171,7 +194,7 @@
                 <el-table-column label="操作">
                   <template #default="{ row }">
                     <el-button type="primary" size="small" @click="DriverhandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
-                    <el-button type="danger" size="small" @click="DriverhandleRemove(row)">删除</el-button>
+                    <!-- <el-button type="danger" size="small" @click="DriverhandleRemove(row)">删除</el-button> -->
                     <el-button type="success" size="small" @click="DriverhandleSave(row)" v-if="row.isEditing">保存</el-button>
                     <el-button type="info" size="small" @click="DriverhandleCancel(row)" v-if="row.isEditing">取消</el-button>
                   </template>
@@ -180,6 +203,12 @@
             </template>
             <template v-else-if="currentMenu === 'carRequest'">
               <h3>用车申请表</h3>
+              <div class="search-container">
+                <div class="search-wrapper">
+                  <el-input v-model="searchValue" placeholder="请输入申请名" class="search-input"></el-input>
+                  <el-button type="primary" size="small" @click="VehiclehandleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+              </div>
               <el-table :data="carRequestData" stripe>
                 <el-table-column prop="requestid" label="申请ID"></el-table-column>
                 <el-table-column prop="applicantid" label="申请人ID"></el-table-column>
@@ -196,7 +225,7 @@
                 <el-table-column label="操作">
                   <template #default="{ row }">
                     <el-button type="primary" size="small" @click="CarRequesthandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
-                    <el-button type="danger" size="small" @click="CarRequesthandleRemove(row)">删除</el-button>
+                    <!-- <el-button type="danger" size="small" @click="CarRequesthandleRemove(row)">删除</el-button> -->
                     <el-button type="success" size="small" @click="CarRequesthandleSave(row)" v-if="row.isEditing">保存</el-button>
                     <el-button type="info" size="small" @click="CarRequesthandleCancel(row)" v-if="row.isEditing">取消</el-button>
                   </template>
@@ -210,7 +239,20 @@
                 <el-table-column prop="requestid" label="申请ID"></el-table-column>
                 <el-table-column prop="captainid" label="队长ID"></el-table-column>
                 <el-table-column prop="driverid" label="司机ID"></el-table-column>
-                <el-table-column prop="status" label="状态"></el-table-column>
+                <el-table-column prop="status" label="状态">
+                  <template #default="{ row }">
+                    <span v-if="!row.isEditing">{{ row.status }}</span>
+                    <el-input v-model="row.status" v-else></el-input>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="primary" size="small" @click="dispatchProcesshandleEdit(row)" v-if="!row.isEditing">编辑</el-button>
+                    <!-- <el-button type="danger" size="small" @click="CarRequesthandleRemove(row)">删除</el-button> -->
+                    <el-button type="success" size="small" @click="dispatchProcesshandleSave(row)" v-if="row.isEditing">保存</el-button>
+                    <el-button type="info" size="small" @click="dispatchProcesshandleCancel(row)" v-if="row.isEditing">取消</el-button>
+                  </template>
+                </el-table-column>
               </el-table>
             </template>
             <template v-else-if="currentMenu === 'approvalRecord'">
@@ -229,6 +271,11 @@
                 <el-table-column prop="endid" label="结束ID"></el-table-column>
                 <el-table-column prop="requestid" label="申请ID"></el-table-column>
                 <el-table-column prop="endtime" label="结束时间"></el-table-column>
+                <el-table-column label="操作">
+                  <template #default="{ row }">
+                    <el-button type="danger" size="small" @click="CarhandleRemove(row)">删除</el-button>
+                  </template>
+                  </el-table-column>
               </el-table>
             </template>
             <template v-else-if="currentMenu === 'statistics'">
@@ -275,7 +322,14 @@
         statisticsData: [], // 统计数据表数据
         jsonstatisticsData:[],
         Stringdate:'',
+        searchValue:'',    //用于搜索
       };
+    },
+    mounted() {
+      this.$nextTick(() => {
+        this.$refs.userProfileMenuItem.$el.classList.add('is-active');
+        this.showUserProfileTable();
+      });
     },
     methods: {
       async fetchTableData(url, targetData) {
@@ -391,6 +445,130 @@
         // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
         row.isEditing = false;
       },
+      handleSearch() {
+        // 发送请求根据职务或用户名查询个人信息
+        if(this.searchValue=='领导'){
+          this.axios
+          .get(`/user/profileLeader `)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+            this.searchValue='';
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }else if(this.searchValue=='员工'){
+          this.axios
+          .get(`/user/profileStaff `)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+            this.searchValue='';
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }else if(this.searchValue=='车队队长'){
+          this.axios
+          .get(`/user/profileDriverCap `)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }else if(this.searchValue=='司机'){
+          this.axios
+          .get(`/user/profileDriver `)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+            this.searchValue='';
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }else if(this.searchValue==''){
+          this.axios
+          .get(`/user/profile`)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+            this.searchValue='';
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }else{
+          this.axios
+          .get(`/user/profileName?username=${this.searchValue} `)
+          .then(response => {
+            // 更新个人信息表的数据
+            console.log(response.data);
+            this.userProfileData = response.data.map(item => ({
+              userid: item[0],
+              username: item[1],
+              usertype: item[2],
+              avatar: item[3],
+              name: item[4]
+            }));
+            this.jsondata = [];
+            this.searchValue='';
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+        }
+        
+      },
 
 
       async showFleetTable() {
@@ -430,6 +608,29 @@
             // 处理错误
             console.error(error);
           });
+      },
+      FleethandleSearch() {
+        console.log(this.searchValue);
+        if (this.searchValue === '') {
+          this.fleetfetchVehicleData('http://localhost:8081/fleet/Allprofile');
+        } else {
+          this.fleetfetchVehicleData(`http://localhost:8081/fleet/fleetname?fleetname=${this.searchValue}`);
+        }
+      },
+
+      async fleetfetchVehicleData(url) {
+        try {
+          const response = await this.axios.get(url);
+          const data = response.data;
+          this.fleetData = data.map(item => ({
+            fleetname: item[0],
+            fleetid: item[1],
+            captainid: item[2]
+          }));
+          this.searchValue = '';
+        } catch (error) {
+          console.error(error);
+        }
       },
       FleethandleSave(row) {
         // 执行保存操作
@@ -487,6 +688,30 @@
             // 处理错误
             console.error(error);
           });
+      },
+      VehiclehandleSearch() {
+        console.log(this.searchValue);
+        if (this.searchValue === '') {
+          this.fetchVehicleData('http://localhost:8081/vehicles/Allprofile');
+        } else {
+          this.fetchVehicleData(`http://localhost:8081/vehicles/vehicleFleet?fleetid=${this.searchValue}`);
+        }
+      },
+
+      async fetchVehicleData(url) {
+        try {
+          const response = await this.axios.get(url);
+          const data = response.data;
+          this.vehicleData = data.map(item => ({
+            vehicleid: item[0].vehicleid,
+            vehicletype: item[0].vehicletype,
+            fleetid: item[0].fleetid,
+            captainid: item[2]
+          }));
+          this.searchValue = '';
+        } catch (error) {
+          console.error(error);
+        }
       },
       VehiclehandleSave(row) {
         // 执行保存操作
@@ -549,6 +774,29 @@
         // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
         row.isEditing = true;
         console.log('row',row)
+      },
+      DriverhandleSearch() {
+        console.log(this.searchValue);
+        if (this.searchValue === '') {
+          this.driversfetchVehicleData('http://localhost:8081/drivers/Allprofile');
+        } else {
+          this.driversfetchVehicleData(`http://localhost:8081/drivers/name?name=${this.searchValue}`);
+        }
+      },
+
+      async driversfetchVehicleData(url) {
+        try {
+          const response = await this.axios.get(url);
+          const data = response.data;
+          this.driverData = data.map(item => ({
+            driverid: item.driverId,
+            name: item.name,
+            fleetid: item.fleetId
+          }));
+          this.searchValue = '';
+        } catch (error) {
+          console.error(error);
+        }
       },
       DriverhandleRemove(row) {
         // 执行删除操作
@@ -660,7 +908,33 @@
         this.Stringdate='';
         this.jsondata=[];
       },
+      CarRequesthandleSearch() {
+        console.log(this.searchValue);
+        if (this.searchValue === '') {
+          this.fetchCarRequest('http://localhost:8081/vehicles/Allprofile');
+        } else {
+          this.fetchCarRequest(`http://localhost:8081/vehicles/vehicleFleet?fleetid=${this.searchValue}`);
+        }
+      },
 
+      async fetchCarRequest(url) {
+        try {
+          const response = await this.axios.get(url);
+          const data = response.data;
+          this.carRequestData = data.map(item => ({
+            requestid: item[0].requestId,
+            applicantid: item[1],
+            reason: item[0].reason,
+            passengercount: item[0].passengerCount,
+            vehicletype: item[0].vehicleType,
+            starttime: this.formatDateTime(item[0].startTime),
+            status: item[0].status
+          }));
+          this.searchValue = '';
+        } catch (error) {
+          console.error(error);
+        }
+      },
 
       CarRequesthandleEdit(row) {
         // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
@@ -671,12 +945,14 @@
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.axios.delete(`/fleet/${row.userid}`)
+        console.log(row.requestid)
+        this.axios
+          .delete(`/carrequests/${row.requestid}`)
           .then(() => {
-            // 删除成功后，从 userProfileData 数组中移除对应的行数据
-            const index = this.userProfileData.findIndex(item => item.userid === row.userid);
+            // 删除成功后，从 carEndData 数组中移除对应的行数据
+            const index = this.carRequestData.findIndex(item => item.requestid === row.requestid);
             if (index !== -1) {
-              this.userProfileData.splice(index, 1);
+              this.carRequestData.splice(index, 1);
             }
           })
           .catch(error => {
@@ -728,6 +1004,52 @@
                                 }
                                 this.jsondata=[];
       },
+      dispatchProcesshandleEdit(row) {
+        // 点击编辑按钮时，将对应行的 isEditing 属性设为 true，切换为可编辑状态
+        row.isEditing = true;
+        console.log('row',row)
+      },
+      dispatchProcesshandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        console.log(row.processid)
+        this.axios
+          .delete(`/carrequests/${row.processid}`)
+          .then(() => {
+            // 删除成功后，从 carEndData 数组中移除对应的行数据
+            const index = this.dispatchProcessData.findIndex(item => item.processid === row.processid);
+            if (index !== -1) {
+              this.dispatchProcessData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+      dispatchProcesshandleSave(row) {
+        // 执行保存操作
+        // 发送请求到后端，更新对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+        const encodedName = encodeURIComponent(row.status).replace(/%3D/g, '%20'); // 将等号编码为空格
+        const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
+        console.log('status',decodedName)
+        this.axios.post(`/dispatchprocess/${row.processid}/status`, decodedName)
+          .then(() => {
+            // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
+            row.isEditing = false;
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error); 
+          });
+      },
+      dispatchProcesshandleCancel(row) {
+        // 取消编辑，将对应行的 isEditing 属性设为 false，恢复原始数据
+        row.isEditing = false;
+      },
+
       async showApprovalRecordTable() {
         this.currentMenu = 'approvalRecord';
         // 请求审核记录表数据并赋值给approvalRecordData
@@ -779,6 +1101,27 @@
         this.Stringdate='';
         this.jsondata=[];
       },
+      CarhandleRemove(row) {
+        // 执行删除操作
+        // 发送请求到后端，删除对应行数据
+        // 示例代码（需要根据实际情况进行调整）：
+
+        this.axios
+          .delete(`/carend/${row.endid}`)
+          .then(() => {
+            // 删除成功后，从 carEndData 数组中移除对应的行数据
+            const index = this.carEndData.findIndex(item => item.endid === row.endid);
+            if (index !== -1) {
+              this.carEndData.splice(index, 1);
+            }
+          })
+          .catch(error => {
+            // 处理错误
+            console.error(error);
+          });
+      },
+
+
       async showStatisticsTable() {
         this.currentMenu = 'statistics';
         // 请求统计数据表数据并赋值给statisticsData
@@ -835,6 +1178,26 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 10px;
+  }
+
+  .search-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-wrapper {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+  }
+  
+  .search-input {
+    width: 150px;
+  }
+  
+  .search-button {
+    height: 32px;
+    margin-left: 10px;
   }
   </style>
   

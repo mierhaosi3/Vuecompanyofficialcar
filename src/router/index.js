@@ -4,6 +4,10 @@ import MyLogin from '../components/MyLogin'
 import MyRegister from '../components/MyRegister'
 import MyHome from '../components/MyHome'
 import adminHome from '../components/admin/adminHome';
+import MyExamine from '../components/Caption/MyExamine'
+import MyInformation from '../components/Caption/MyInformation'
+import MyExamineDone from '../components/Caption/MyExamineDone'
+import UserHome from '../components/user/UserHome'
 import 'element-plus/theme-chalk/index.css';
 import { Message } from 'element-plus/lib/locale/lang/zh-cn'
 
@@ -24,7 +28,19 @@ const router = createRouter({
         },{
             path:'/adminHome',
             component:adminHome
-        },
+        },{
+            path:"/MyExamine",
+            component:MyExamine
+        },{
+            path:"/MyInformation",
+            component:MyInformation
+        },{
+            path:"/MyExamineDone",
+            component:MyExamineDone
+        },{
+            path:"/UserHome",
+            component:UserHome
+        }
     ],
 })
 // 导航守卫，前置处理

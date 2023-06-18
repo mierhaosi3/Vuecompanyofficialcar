@@ -1,14 +1,11 @@
 <template>
   <el-container direction="vertical" class="container">
-    <el-button type="primary" @click="Mydispatch" class="header-button2">派车</el-button>
-
     <el-main style="padding: 20px;">
       <el-card class="common-layout" shadow="never">
-        <el-button type="primary" @click="MyInformation" class="header-button">跳转至个人信息</el-button>
-
         <div class="header-container">
+          <el-button type="primary" @click="MyInformation" class="header-button">跳转至个人信息</el-button>
+          <el-button type="primary" @click="Mydispatch" class="header-button">跳转至已审批</el-button>
           <h3 class="header-title">审批表单</h3>
-          <el-button type="primary" @click="redirectToFinishPage" class="header-button">跳转至已审批</el-button>
         </div>
         <el-card v-for="(dataBlock, index) in dataBlocks" :key="dataBlock.id" class="data-block">
           <el-card-header>{{ dataBlock.title }}</el-card-header>
@@ -29,14 +26,8 @@
           </div>
           <el-card class="approval-form">
             <el-form :model="formValues" label-width="80px">
-              <el-form-item v-for="item in dataBlock.items" :key="item.id" :label="item.label">
-                <el-radio-group v-model="formValues[item.id]" style="display: flex; align-items: center;">
-                  <el-radio :label="true" style="margin-right: 10px;">通过</el-radio>
-                  <el-radio :label="false">驳回</el-radio>
-                </el-radio-group>
-              </el-form-item>
               <el-form-item>
-                <el-button type="primary" @click="carsubmit(dataBlock)">提交</el-button>
+                <el-button type="primary" @click="carsubmit(dataBlock)">撤销</el-button>
               </el-form-item>
             </el-form>
           </el-card>
@@ -56,7 +47,8 @@ export default {
       Turndate:'',
       formValues: {}, // 添加一个用于存储表单值的对象
       carRequestData: [],
-      token:''
+      token:'',
+
     };
   },
   mounted() {
@@ -82,31 +74,20 @@ export default {
         }
       }
     },
-    redirectToFinishPage() {
-      this.$router.push("/MyExamineDone");
-    },
     MyInformation() {
-      this.$router.push("/MyInformation");
+      this.$router.push("/UserHome");
     },
     Mydispatch(){
-        this.$router.push("/MyDispatchCar")
+        this.$route.push("/UserResponseDone")
       },
     carsubmit(dataBlock){
-      console.log(this.token)
       for (const itemId in this.formValues[dataBlock.id]) {
         const selectedValue = this.formValues[dataBlock.id][itemId];
         console.log('Item ID:', itemId); // 输出选项的ID
         console.log('Selected Value:', selectedValue); // 输出选项的值（true或false）
       }
-      var value = null;
-      if(this.formValues[dataBlock.id]==true){
-        value = '通过'
-      }else if(this.formValues[dataBlock.id]==false){
-        value = '驳回'
-      }
-      console.log(dataBlock.requestid)
 
-      this.axios.post(`/carrequests/${dataBlock.requestid}/status`, value,{
+      this.axios.post(`/carrequests/${dataBlock.requestid}/status`, '未审批',{
             headers:{
             "token": `${this.token}` // 在请求头中携带 token
             }
@@ -125,68 +106,58 @@ export default {
     },
     async showCarRequestTable() {
       this.currentMenu = 'carRequest';
-      // 请求用车申请表数据并赋值给carRequestData
       const storedUserId = localStorage.getItem('userid');
+        const storeToken = localStorage.getItem('token')
         if (storedUserId) {
             this.userid = storedUserId;
+            this.token = storeToken;
         } else {
             // 如果本地存储中没有userid，则使用默认值或其他方式获取userid
             this.userid = this.$store.state.userid;
+            this.token = this.$store.state.token;
             // 将userid存储到本地存储中
             localStorage.setItem('userid', this.userid);
+            localStorage.setItem('token',this.token);
         }
-        console.log(this.token)
+      // 请求用车申请表数据并赋值给carRequestData
       await this.fetchTableData('http://localhost:8081/carrequests/Allprofile', 'carRequestData',{
         headers: {
-            'token': `${this.token}`
+            'token': this.token
           }
       });
 
       // 根据carRequestData的长度生成相应数量的数据块
       this.dataBlocks = this.carRequestData.map((data, index) => {
-      this.Stringdate = data[0].startTime;
-      this.Turndate = this.formatDateTime ();
+        this.Stringdate = data[0].startTime;
+        this.Turndate = this.formatDateTime();
+        console.log(data);
+        if (data[0].status == '通过' ||data[0].status == '驳回') {
 
-      // 获取今天的日期
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // 将时间部分设为 00:00:00，只比较日期部分
+          return {
+            id: index + 1,
+            title: `数据块${index + 1}`,
+            form: {},
+            items: [
+              {
+                id: index + 1,
+                label: '通过/驳回',
+                value: '',
+              },
+            ],
+            requestid: data[0].requestId,
+            applicantId: data[0].applicantId,
+            applicantName: data[1],
+            passengerCount: data[0].passengerCount,
+            reason: data[0].reason,
+            vehicleType: data[0].vehicleType,
+            startTime: this.Turndate,
+          };
 
-      // 将返回日期转换为 Date 对象
-      const requestDate = new Date(this.Turndate);
-      requestDate.setHours(0, 0, 0, 0); // 将时间部分设为 00:00:00，只比较日期部分
 
-      // 获取未来七天的日期
-      const sevenDaysLater = new Date();
-      sevenDaysLater.setDate(today.getDate() + 7);
-      sevenDaysLater.setHours(0, 0, 0, 0); // 将时间部分设为 00:00:00，只比较日期部分
-
-      if (
-        (data[0].status === '待审批' || data[0].status === '未审批') &&
-        requestDate >= today && requestDate <= sevenDaysLater
-      ) {
-        return {
-          id: index + 1,
-          title: `数据块${index + 1}`,
-          form: {},
-          items: [
-            {
-              id: index + 1,
-              label: '通过/驳回',
-              value: '',
-            },
-          ],
-          requestid: data[0].requestId,
-          applicantId: data[0].applicantId,
-          applicantName: data[1],
-          passengerCount: data[0].passengerCount,
-          reason: data[0].reason,
-          vehicleType: data[0].vehicleType,
-          startTime: this.Turndate,
-        };
-      } else {
-        return null; // 返回 null 来排除不符合条件的数据块
-      }
-    }).filter(block => block !== null); // 过滤掉为 null 的数据块
+        } else {
+          return null; // 返回 null 来排除不符合条件的数据块
+        }
+      }).filter(block => block !== null); // 过滤掉为 null 的数据块
     },
     formatDateTime() {
         // 使用逗号分隔的字符串拆分为数组
@@ -210,41 +181,6 @@ export default {
         // 返回格式化后的日期时间字符串
         return `${year}-${formattedMonth}-${formattedDay} ${formattedHour}:${formattedMinute}:00`;
 
-      },
-      formatDateTimeAddSenven() {
-        const dateTimeArray = Object.values(this.Stringdate);
-        const year = dateTimeArray[0];
-        const month = dateTimeArray[1];
-        const day = dateTimeArray[2];
-        const hour = dateTimeArray[3];
-        const minute = dateTimeArray[4];
-
-        const formattedMonth = String(month).padStart(2, '0');
-        const formattedDay = String(day).padStart(2, '0');
-        const formattedHour = String(hour).padStart(2, '0');
-        const formattedMinute = String(minute).padStart(2, '0');
-
-        // 创建一个 Date 对象并设置为选择的日期时间
-        const selectedDate = new Date(year, month - 1, day, hour, minute);
-
-        // 将日期增加七天
-        selectedDate.setDate(selectedDate.getDate() + 7);
-
-        // 提取增加七天后的年、月、日、小时和分钟
-        const newYear = selectedDate.getFullYear();
-        const newMonth = selectedDate.getMonth() + 1;
-        const newDay = selectedDate.getDate();
-        const newHour = selectedDate.getHours();
-        const newMinute = selectedDate.getMinutes();
-
-        // 将月份、日期、小时和分钟补零，确保为两位数
-        const formattedNewMonth = String(newMonth).padStart(2, '0');
-        const formattedNewDay = String(newDay).padStart(2, '0');
-        const formattedNewHour = String(newHour).padStart(2, '0');
-        const formattedNewMinute = String(newMinute).padStart(2, '0');
-
-        // 返回增加七天后的格式化日期时间字符串
-        return `${newYear}-${formattedNewMonth}-${formattedNewDay} ${formattedNewHour}:${formattedNewMinute}:00`;
       },
       async fetchTableData(url, dataProp) {
         try {
@@ -283,7 +219,11 @@ export default {
   align-items: center;
   justify-content: flex-end;
 }
-
+.header-button2 {
+  position: absolute;
+  top: 40px;
+  right: 0;
+}
 .container {
   display: flex;
   justify-content: center;
@@ -317,12 +257,7 @@ export default {
 .header-title {
   margin: 0;
 }
-.header-button2 {
-  position: absolute;
-  top: 40px;
-  right: 0;
-
-}.header-spacer{
+.header-spacer{
   height: 20px;
 }
 </style>

@@ -2,12 +2,18 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import MyLogin from '../components/MyLogin'
 import MyRegister from '../components/MyRegister'
-import MyHome from '../components/MyHome'
 import adminHome from '../components/admin/adminHome';
 import MyExamine from '../components/Caption/MyExamine'
 import MyInformation from '../components/Caption/MyInformation'
 import MyExamineDone from '../components/Caption/MyExamineDone'
 import UserHome from '../components/user/UserHome'
+import UserInformation from '../components/user/UserInformation'
+import MyDispatchCar from '../components/Caption/MyDispatchCar'
+import MyDispatchCarDone from '../components/Caption/MyDispatchCarDone'
+import DriverInformation from '../components/Driver/DriverInformation'
+import DriverList from '../components/Driver/DriverList'
+import UserResponseDone from '../components/user/UserResponseDone'
+
 import 'element-plus/theme-chalk/index.css';
 import { Message } from 'element-plus/lib/locale/lang/zh-cn'
 
@@ -23,9 +29,6 @@ const router = createRouter({
             path: '/MyRegister',
             component: MyRegister
         },{
-            path: '/MyHome',
-            component: MyHome
-        },{
             path:'/adminHome',
             component:adminHome
         },{
@@ -40,6 +43,24 @@ const router = createRouter({
         },{
             path:"/UserHome",
             component:UserHome
+        },{
+            path:"/UserInformation",
+            component:UserInformation
+        },{
+            path:"/MyDispatchCar",
+            component:MyDispatchCar
+        },{
+            path:"/MyDispatchCarDone",
+            component:MyDispatchCarDone
+        },{
+            path:"/DriverInformation",
+            component:DriverInformation
+        },{
+            path:"/DriverList",
+            component:DriverList
+        },{
+            path:"/UserResponseDone",
+            component:UserResponseDone
         }
     ],
 })

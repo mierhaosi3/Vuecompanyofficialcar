@@ -46,10 +46,14 @@ export default {
       Stringdate:'',
       Turndate:'',
       formValues: {}, // 添加一个用于存储表单值的对象
+      carRequestData: [],
+      token:'',
 
     };
   },
   mounted() {
+    this.token = this.$store.state.token;
+    console.log(this.token)
     this.showCarRequestTable();
     window.addEventListener('resize', this.setTableWidth);
     this.setTableWidth();
@@ -76,6 +80,9 @@ export default {
     MyInformation() {
       this.$router.push("/MyInformation");
     },
+    Mydispatch(){
+        this.$route.push("/MyDispatchCar")
+      },
     carsubmit(dataBlock){
       for (const itemId in this.formValues[dataBlock.id]) {
         const selectedValue = this.formValues[dataBlock.id][itemId];
@@ -83,7 +90,11 @@ export default {
         console.log('Selected Value:', selectedValue); // 输出选项的值（true或false）
       }
 
-      this.axios.post(`/carrequests/${dataBlock.requestid}/status`, '未审批')
+      this.axios.post(`/carrequests/${dataBlock.requestid}/status`, '未审批',{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
         .then(() => {
           // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
           dataBlock.isEditing = false;
@@ -98,8 +109,25 @@ export default {
     },
     async showCarRequestTable() {
       this.currentMenu = 'carRequest';
+      const storedUserId = localStorage.getItem('userid');
+        const storeToken = localStorage.getItem('token')
+        if (storedUserId) {
+            this.userid = storedUserId;
+            this.token = storeToken;
+        } else {
+            // 如果本地存储中没有userid，则使用默认值或其他方式获取userid
+            this.userid = this.$store.state.userid;
+            this.token = this.$store.state.token;
+            // 将userid存储到本地存储中
+            localStorage.setItem('userid', this.userid);
+            localStorage.setItem('token',this.token);
+        }
       // 请求用车申请表数据并赋值给carRequestData
-      await this.fetchTableData('http://localhost:8081/carrequests/Allprofile', 'carRequestData');
+      await this.fetchTableData('http://localhost:8081/carrequests/Allprofile', 'carRequestData',{
+        headers: {
+            'token': this.token
+          }
+      });
 
       // 根据carRequestData的长度生成相应数量的数据块
       this.dataBlocks = this.carRequestData.map((data, index) => {
@@ -157,20 +185,23 @@ export default {
         return `${year}-${formattedMonth}-${formattedDay} ${formattedHour}:${formattedMinute}:00`;
 
       },
-    async fetchTableData(url, dataProp) {
-      // 从数据库获取数据的异步请求
-      try {
-        const response = await fetch(url);
-        if (response.ok) {
-          const data = await response.json();
-          this[dataProp] = data;
-        } else {
-          console.error('请求出错：', response.status);
+      async fetchTableData(url, dataProp) {
+        try {
+          const response = await this.axios.get(url, {
+            headers: {
+              "token": `${this.token}`
+            }
+          });
+          if (response.status >= 200 && response.status < 300) {
+            const data = response.data;
+            this[dataProp] = data;
+          } else {
+            console.error('请求出错：', response.status);
+          }
+        } catch (error) {
+          console.error('请求出错：', error);
         }
-      } catch (error) {
-        console.error('请求出错：', error);
-      }
-    },
+      },
   },
 };
 </script>
@@ -191,7 +222,11 @@ export default {
   align-items: center;
   justify-content: flex-end;
 }
-
+.header-button2 {
+  position: absolute;
+  top: 40px;
+  right: 0;
+}
 .container {
   display: flex;
   justify-content: center;

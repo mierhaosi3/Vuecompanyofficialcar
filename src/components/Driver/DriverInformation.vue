@@ -1,7 +1,6 @@
 <template>
     <div class="user-profile">
-        <el-button type="primary" @click="redirectToFinishPage" class="header-button">跳转至已审批</el-button>
-        <el-button type="primary" @click="Mydispatch" class="header-button2">派车</el-button>
+        <el-button type="primary" @click="redirectToFinishPage" class="header-button">跳转至出车任务</el-button>
 
       <el-table :data="userProfileData" border>
         <el-table-column prop="attribute" label="属性"></el-table-column>
@@ -156,11 +155,8 @@
         }
       },
       redirectToFinishPage() {
-        this.$router.push("/MyExamine");
+        this.$router.push("/DriverLists");
     },
-      Mydispatch(){
-        this.$router.push("/MyDispatchCar")
-      },
       editValue(row) {
         row.editable = true;
       },

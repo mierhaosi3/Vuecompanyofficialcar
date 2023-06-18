@@ -59,8 +59,8 @@ export default {
   },
   methods: {
     submitForm(formName) {
-    // 验证表单中的账号密码是否有效，因为在上面rules中定义为了必填 required: true
-    this.$refs[formName].validate((valid) => {
+      // 验证表单中的账号密码是否有效，因为在上面rules中定义为了必填 required: true
+      this.$refs[formName].validate((valid) => {
       // 点击登录后，让登录按钮开始转圈圈（展示加载动画）
       this.loading = true;
       // 如果经过校验，账号密码都不为空，则发送请求到后端登录接口
@@ -83,6 +83,9 @@ export default {
           .then((res) => {
             if (res.data.code === "0") {
               // 当响应的编码为 0 时，说明登录成功
+              const token = res.headers['token']; // 获取响应头中的Token值
+              console.log(token);
+              this.$store.state.token = token;
               // 将用户信息存储到sessionStorage中
               sessionStorage.setItem("userInfo", JSON.stringify(res.data.data));
               // 发送第二个请求
@@ -112,6 +115,7 @@ export default {
           })
           .then((res) => {
             if (res && res.data) {
+              console.log(res.data)
               // 第二个请求的响应数据存在，进行存储操作
               this.$store.state.UserType = res.data.usertype;
               this.$store.state.userid = res.data.userid;
@@ -128,6 +132,10 @@ export default {
                 console.log(this.$store.state.UserType)
                 // 跳转页面到首页
                 this.$router.push("/UserHome");
+              }else if(this.$store.state.UserType=='司机'){
+                console.log(this.$store.state.UserType)
+                // 跳转页面到首页
+                this.$router.push("/DriverList");
               }
               // 显示后端响应的成功信息
               this.$message({
@@ -141,12 +149,12 @@ export default {
             console.error(error);
             this.loading = false;
           });
-      } else {
-        // 如果账号或密码有一个没填，就直接提示必填，不向后端请求
-        console.log("error submit!!");
-        this.loading = false;
-        return false;
-      }
+        } else {
+          // 如果账号或密码有一个没填，就直接提示必填，不向后端请求
+          console.log("error submit!!");
+          this.loading = false;
+          return false;
+        }
     });
   },
     resetForm(formName) {

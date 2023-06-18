@@ -43,21 +43,32 @@
           </el-menu>
         </el-scrollbar>
       </el-aside>
-  
+      
       <el-container>
         <el-header style="text-align: right; font-size: 12px">
           <div class="toolbar">
-            <el-dropdown>
-              <el-icon style="margin-right: 8px; margin-top: 1px"><setting /></el-icon>
+            <el-badge :value="carRequestCount" class="item" type="primary">
+              <el-button>新的请求</el-button>
+            </el-badge>
+        
+            <el-dropdown trigger="click">
+              <span class="el-dropdown-link">
+                <el-icon @click="clearNotification" class="el-icon--right"></el-icon>
+              </span>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item>View</el-dropdown-item>
-                  <el-dropdown-item>Add</el-dropdown-item>
-                  <el-dropdown-item>Delete</el-dropdown-item>
+                  <el-dropdown-item class="clearfix">
+                    新的请求
+                    <el-badge class="mark" :value="carRequestCount" />
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-            <span>Tom</span>
+            <el-dropdown>
+              <el-icon style="margin-right: 8px; margin-top: 1px"><setting /></el-icon>
+
+            </el-dropdown>
+            <span>{{userid}}</span>
           </div>
         </el-header>
   
@@ -67,7 +78,7 @@
             <template v-if="currentMenu === 'userProfile'">
               <h3>个人信息表</h3>
               <div class="search-container">
-                <el-button type="primary" size="small" class="table-header" @click="handleAdd" style="height: 32px;">新增</el-button>
+                <!-- <el-button type="primary" size="small" class="table-header" @click="handleAdd" style="height: 32px;">新增</el-button> -->
                 <div class="search-wrapper">
                   <el-input v-model="searchValue" placeholder="请输入职务或用户名" class="search-input"></el-input>
                   <el-button type="primary" size="small" @click="handleSearch" class="search-button" style="height: 32px;">查询</el-button>
@@ -239,6 +250,8 @@
                 <el-table-column prop="requestid" label="申请ID"></el-table-column>
                 <el-table-column prop="captainid" label="队长ID"></el-table-column>
                 <el-table-column prop="driverid" label="司机ID"></el-table-column>
+                <el-table-column prop="vehicleid" label="车辆号"></el-table-column>
+
                 <el-table-column prop="status" label="状态">
                   <template #default="{ row }">
                     <span v-if="!row.isEditing">{{ row.status }}</span>
@@ -296,6 +309,9 @@
   
   <script>
   import qs from 'qs';
+  import axios from 'axios';
+
+
 
   export default {
     data() {
@@ -323,6 +339,13 @@
         jsonstatisticsData:[],
         Stringdate:'',
         searchValue:'',    //用于搜索
+        token:'',
+        carRequestCount: 0,
+        notificationCount: 0,
+        previousCarRequestCount: null,
+        timer: null,
+        notificationPosition: 'top-right', 
+        notificationOffset: 20 
       };
     },
     mounted() {
@@ -330,15 +353,43 @@
         this.$refs.userProfileMenuItem.$el.classList.add('is-active');
         this.showUserProfileTable();
       });
+      this.token = this.$store.state.token;
+      console.log(this.token)
+      this.checkCarRequestCount(); 
+      this.timer = setInterval(this.checkCarRequestCount, 10000); 
+      this.notificationCount = this.carRequestCount;
+    },
+    beforeDestroy() {
+      clearInterval(this.timer); 
     },
     methods: {
+      checkCarRequestCount() {
+      axios.get('/carrequests/count')
+        .then(response => {
+          const newCount = response.data.count;
+          if (this.carRequestCount !== null) {
+            this.notificationCount = newCount - this.carRequestCount;
+          }
+          this.previousCarRequestCount = this.carRequestCount;
+          this.carRequestCount = newCount;
+        })
+        .catch(error => {
+          console.error('Error checking car request count:', error);
+        });
+      },
+      clearNotification() {
+        this.notificationCount = 0;
+      },
       async fetchTableData(url, targetData) {
         try {
-          const response = await fetch(url);
-          const data = await response.json();
+          const response = await axios.get(url, {
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          });
+          const data = response.data;
           this.jsonuserProfileData = data;
           this.jsondata = data;
-
           this[targetData] = data;
         } catch (error) {
           console.error(error);
@@ -348,7 +399,22 @@
       // 用户信息表==================================================================================================================
       async showUserProfileTable() {
         this.currentMenu = 'userProfile';
-        await this.fetchTableData('http://localhost:8081/user/profile', 'userProfileData');
+        await this.fetchTableData('http://localhost:8081/user/profile', 'userProfileData',{
+          headers: {
+            'token': this.token
+          }
+        });
+        this.axios({
+          url: "http://localhost:8081/user/profile", // 请求地址
+          method: "get", // 请求方法
+          headers: {
+            "token": `Bearer ${this.token}` // 在请求头中携带 token
+          }
+        })
+          .then(function (res) {
+            // 如果成功，直接保存
+            console.log(res)
+          }.bind(this))
         this.userProfileData=this.jsonuserProfileData;
         for(var i=0;i<this.jsonuserProfileData.length;i++){
           this.userProfileData[i]={userid:this.jsonuserProfileData[i][0],username:this.jsonuserProfileData[i][1],usertype:this.jsonuserProfileData[i][2],avatar:this.jsonuserProfileData[i][3],name:this.jsonuserProfileData[i][4]}
@@ -387,7 +453,11 @@
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.$axios.delete(`/user/${row.userid}`)
+        this.axios.delete(`/user/${row.userid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 userProfileData 数组中移除对应的行数据
             const index = this.userProfileData.findIndex(item => item.userid === row.userid);
@@ -407,7 +477,11 @@
         console.log(row)
         const encodedName = encodeURIComponent(row.name).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
-        this.axios.post(`/user/${row.userid}/avatar`, decodedName)
+        this.axios.post(`/user/${row.userid}/avatar`, decodedName,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -419,7 +493,11 @@
 
         const encodedName2 = encodeURIComponent(row.username).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName2 = decodeURIComponent(encodedName2).trim(); // 解码并修剪字符串
-        this.axios.post(`/user/${row.userid}/username`, decodedName2)
+        this.axios.post(`/user/${row.userid}/username`, decodedName2,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
         .then(() => {
           // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
           row.isEditing = false;
@@ -431,7 +509,11 @@
 
         const encodedName3 = encodeURIComponent(row.avatar).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName3 = decodeURIComponent(encodedName3).trim(); // 解码并修剪字符串
-        this.axios.post(`/user/${row.userid}/name`, decodedName3)
+        this.axios.post(`/user/${row.userid}/name`, decodedName3,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
         .then(() => {
           // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
           row.isEditing = false;
@@ -449,7 +531,11 @@
         // 发送请求根据职务或用户名查询个人信息
         if(this.searchValue=='领导'){
           this.axios
-          .get(`/user/profileLeader `)
+          .get(`/user/profileLeader `,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -469,7 +555,11 @@
           });
         }else if(this.searchValue=='员工'){
           this.axios
-          .get(`/user/profileStaff `)
+          .get(`/user/profileStaff `,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -489,7 +579,11 @@
           });
         }else if(this.searchValue=='车队队长'){
           this.axios
-          .get(`/user/profileDriverCap `)
+          .get(`/user/profileDriverCap `,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -508,7 +602,11 @@
           });
         }else if(this.searchValue=='司机'){
           this.axios
-          .get(`/user/profileDriver `)
+          .get(`/user/profileDriver `,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -528,7 +626,11 @@
           });
         }else if(this.searchValue==''){
           this.axios
-          .get(`/user/profile`)
+          .get(`/user/profile`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -548,7 +650,11 @@
           });
         }else{
           this.axios
-          .get(`/user/profileName?username=${this.searchValue} `)
+          .get(`/user/profileName?username=${this.searchValue} `,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(response => {
             // 更新个人信息表的数据
             console.log(response.data);
@@ -580,7 +686,23 @@
           { fleetid: 2, fleetname: 'Fleet 2', captainid: 2 },
           // 其他车队数据
         ];
-        await this.fetchTableData('http://localhost:8081/fleet/Allprofile', 'fleetData');
+
+        this.axios({
+          url: "http://localhost:8081/fleet/Allprofile", // 请求地址
+          method: "get", // 请求方法
+          headers: {
+            "token": `${this.token}` // 在请求头中携带 token
+          }
+        })
+          .then(function (res) {
+            // 如果成功，直接保存
+            console.log(res)
+          }.bind(this))
+        await this.fetchTableData('http://localhost:8081/fleet/Allprofile', 'fleetData',{
+          headers: {
+            'token': this.token
+          }
+        });
         this.fleetData=this.jsondata;
         for(var i=0;i<this.jsondata.length;i++){
           this.fleetData[i]={fleetname:this.jsonuserProfileData[i][0],fleetid:this.jsonuserProfileData[i][1],captainid:this.jsonuserProfileData[i][2]}
@@ -596,7 +718,11 @@
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.axios.delete(`/fleet/${row.userid}`)
+        this.axios.delete(`/fleet/${row.userid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 userProfileData 数组中移除对应的行数据
             const index = this.userProfileData.findIndex(item => item.userid === row.userid);
@@ -620,7 +746,11 @@
 
       async fleetfetchVehicleData(url) {
         try {
-          const response = await this.axios.get(url);
+          const response = await this.axios.get(url,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          });
           const data = response.data;
           this.fleetData = data.map(item => ({
             fleetname: item[0],
@@ -638,7 +768,11 @@
         // 示例代码（需要根据实际情况进行调整）：
         const encodedName2 = encodeURIComponent(row.fleetname).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName2 = decodeURIComponent(encodedName2).trim(); // 解码并修剪字符串
-        this.axios.post(`/fleet/${row.fleetid}/fleetname`, decodedName2)
+        this.axios.post(`/fleet/${row.fleetid}/fleetname`, decodedName2,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -676,7 +810,11 @@
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.axios.delete(`/fleet/${row.userid}`)
+        this.axios.delete(`/fleet/${row.userid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 userProfileData 数组中移除对应的行数据
             const index = this.userProfileData.findIndex(item => item.userid === row.userid);
@@ -700,7 +838,11 @@
 
       async fetchVehicleData(url) {
         try {
-          const response = await this.axios.get(url);
+          const response = await this.axios.get(url,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          });
           const data = response.data;
           this.vehicleData = data.map(item => ({
             vehicleid: item[0].vehicleid,
@@ -720,7 +862,11 @@
         const encodedName = encodeURIComponent(row.vehicletype).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
         console.log('vehicletype',decodedName)
-        this.axios.post(`/vehicles/${row.vehicleid}/VehicleType`, decodedName)
+        this.axios.post(`/vehicles/${row.vehicleid}/VehicleType`, decodedName,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -735,7 +881,11 @@
               'Content-Type': 'application/x-www-form-urlencoded'
             }
           };
-          this.axios.post(`/vehicles/${row.vehicleid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config)
+          this.axios.post(`/vehicles/${row.vehicleid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -786,7 +936,11 @@
 
       async driversfetchVehicleData(url) {
         try {
-          const response = await this.axios.get(url);
+          const response = await this.axios.get(url,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          });
           const data = response.data;
           this.driverData = data.map(item => ({
             driverid: item.driverId,
@@ -802,7 +956,11 @@
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
-        this.axios.delete(`/fleet/${row.userid}`)
+        this.axios.delete(`/fleet/${row.userid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 userProfileData 数组中移除对应的行数据
             const index = this.userProfileData.findIndex(item => item.userid === row.userid);
@@ -822,7 +980,11 @@
         const encodedName = encodeURIComponent(row.name).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
         console.log('name',decodedName)
-        this.axios.post(`/drivers/${row.driverid}/name`, decodedName)
+        this.axios.post(`/drivers/${row.driverid}/name`, decodedName,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -837,7 +999,11 @@
               'Content-Type': 'application/x-www-form-urlencoded'
             }
           };
-          this.axios.post(`/vehicles/${row.driverid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config)
+          this.axios.post(`/vehicles/${row.driverid}/fleetid`, qs.stringify({ fleetid: row.fleetid }),config,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -919,7 +1085,11 @@
 
       async fetchCarRequest(url) {
         try {
-          const response = await this.axios.get(url);
+          const response = await this.axios.get(url,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          });
           const data = response.data;
           this.carRequestData = data.map(item => ({
             requestid: item[0].requestId,
@@ -947,7 +1117,11 @@
         // 示例代码（需要根据实际情况进行调整）：
         console.log(row.requestid)
         this.axios
-          .delete(`/carrequests/${row.requestid}`)
+          .delete(`/carrequests/${row.requestid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 carEndData 数组中移除对应的行数据
             const index = this.carRequestData.findIndex(item => item.requestid === row.requestid);
@@ -967,7 +1141,11 @@
         const encodedName = encodeURIComponent(row.status).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
         console.log('status',decodedName)
-        this.axios.post(`/carrequests/${row.requestid}/status`, decodedName)
+        this.axios.post(`/carrequests/${row.requestid}/status`, decodedName,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -996,11 +1174,12 @@
           },
           // 其他派车流程数据
         ];
-        await this.fetchTableData('http://localhost:8081/dispatchprocess/Allprofile', 'dispatchProcessData');
+        await this.fetchTableData('http://localhost:8081/dispatchprocess/AllprofileWithName', 'dispatchProcessData');
         this.dispatchProcessData=this.jsondata;
+        console.log(this.dispatchProcessData)
         for(var i=0;i<this.jsondata.length;i++){
-          this.dispatchProcessData[i]={processid:this.dispatchProcessData[i][0].processId,requestid:this.dispatchProcessData[i][0].requestId,captainid:this.dispatchProcessData[i][1],
-                                  driverid:this.dispatchProcessData[i][2],status:this.dispatchProcessData[i][0].status}
+          this.dispatchProcessData[i]={processid:this.dispatchProcessData[i][0].processId,requestid:this.dispatchProcessData[i][3],captainid:this.dispatchProcessData[i][1],
+                                  driverid:this.dispatchProcessData[i][2],vehicleid:this.dispatchProcessData[i][0].vehicleid,status:this.dispatchProcessData[i][0].status}
                                 }
                                 this.jsondata=[];
       },
@@ -1015,7 +1194,11 @@
         // 示例代码（需要根据实际情况进行调整）：
         console.log(row.processid)
         this.axios
-          .delete(`/carrequests/${row.processid}`)
+          .delete(`/carrequests/${row.processid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 carEndData 数组中移除对应的行数据
             const index = this.dispatchProcessData.findIndex(item => item.processid === row.processid);
@@ -1035,7 +1218,11 @@
         const encodedName = encodeURIComponent(row.status).replace(/%3D/g, '%20'); // 将等号编码为空格
         const decodedName = decodeURIComponent(encodedName).trim(); // 解码并修剪字符串
         console.log('status',decodedName)
-        this.axios.post(`/dispatchprocess/${row.processid}/status`, decodedName)
+        this.axios.post(`/dispatchprocess/${row.processid}/status`, decodedName,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 保存成功后，将 isEditing 属性设为 false，切换回非编辑状态
             row.isEditing = false;
@@ -1101,13 +1288,17 @@
         this.Stringdate='';
         this.jsondata=[];
       },
-      CarhandleRemove(row) {
+        CarhandleRemove(row) {
         // 执行删除操作
         // 发送请求到后端，删除对应行数据
         // 示例代码（需要根据实际情况进行调整）：
 
         this.axios
-          .delete(`/carend/${row.endid}`)
+          .delete(`/carend/${row.endid}`,{
+            headers:{
+            "token": `${this.token}` // 在请求头中携带 token
+            }
+          })
           .then(() => {
             // 删除成功后，从 carEndData 数组中移除对应的行数据
             const index = this.carEndData.findIndex(item => item.endid === row.endid);
@@ -1198,6 +1389,25 @@
   .search-button {
     height: 32px;
     margin-left: 10px;
+  }
+  .item {
+    margin-top: 10px;
+    margin-right: 40px;
+  }
+  
+  .el-dropdown {
+    margin-top: 1.1rem;
+  }
+  
+  .mark {
+    margin-left: 10px;
+  }
+  
+  .floating-badge {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
   }
   </style>
   

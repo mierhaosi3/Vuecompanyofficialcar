@@ -1,6 +1,7 @@
 <template>
   <div class="user-profile">
     <el-button type="primary" @click="MyInformation" class="header-button">申请</el-button>
+    <el-button type="primary" @click="UserResponseDone" class="header-button">跳转</el-button>
 
     <el-table :data="userProfileData" border>
       <el-table-column prop="attribute" label="属性"></el-table-column>
@@ -69,6 +70,9 @@ export default {
   methods: {
     MyInformation() {
       this.$router.push("/UserHome");
+    },
+    UserResponseDone() {
+      this.$router.push("/UserResponseDone");
     },
     async showUserProfileTable() {
       this.currentMenu = 'userProfile';

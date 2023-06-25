@@ -1,7 +1,7 @@
 <template>
   <div class="form-container">
     <el-button type="primary" @click="MyInformation" class="header-button">跳转至个人信息</el-button>
-    <el-button type="primary" @click="Mydispatch" class="header-button">跳转至已审批</el-button>
+    <el-button type="primary" @click="UserResponseDone" class="header-button">跳转</el-button>
     <el-form :model="ruleForm" :rules="rules" ref="ruleForm" class="demo-ruleForm">
       <el-form-item label="申请理由" prop="reason">
         <el-select v-model="ruleForm.reason" placeholder="请选择理由">
@@ -66,6 +66,7 @@ export default {
       requesid:'',
       fleetid:'',
       Acount:'',
+      dispatchcount:'',
       ruleForm: {
         reason: '',
         vehicletype: '',
@@ -136,9 +137,9 @@ export default {
     MyInformation() {
       this.$router.push("/UserInformation");
     },
-    Mydispatch(){
-        this.$route.push("/UserResponseDone")
-      },
+    UserResponseDone() {
+      this.$router.push("/UserResponseDone");
+    },
     submitForm(formName) {
       this.userid = this.$store.state.userid;
       console.log('this.userid',this.userid)
@@ -149,6 +150,7 @@ export default {
           const formattedTime1 = moment(this.ruleForm.date2).format('HH:mm:ss');
           const formattedDate2 = moment(this.ruleForm.date3).format('YYYY-MM-DD');
           const formattedTime2 = moment(this.ruleForm.date4).format('HH:mm:ss');
+          const combinedDateTime = formattedDate1 + 'T' + formattedTime1;
 
           // 输出所有选择的信息
           console.log('申请理由:', this.ruleForm.reason);
@@ -209,6 +211,38 @@ export default {
               });
 
               axios
+              .get('http://localhost:8081/dispatchprocess/count')
+              .then((response) => {
+                const dispatchcount = response.data;
+                console.log('获取的 requestid:', dispatchcount);
+                this.dispatchcount = dispatchcount.count + 1;
+                const requestData4 = {
+                  processid: this.dispatchcount,
+                  requesid: this.userid,
+                  captionid: 3,
+                  driverid: null,
+                  status: '未派车',
+                  vehicleid: null,
+                };
+                console.log(requestData)
+
+                axios
+                  .post('/dispatchprocess/addCarRequest', requestData4)
+                  .then((response) => {
+                    // 请求成功回调
+                    const adddispatchprocess = response.data;
+                    console.log('添加成功:', adddispatchprocess);
+                  })
+                  .catch((error) => {
+                    // 请求失败回调
+                    console.error('添加失败:', error);
+                  });
+              })
+              .catch((error) => {
+                console.error('获取 requestid 失败:', error);
+              });
+
+              axios
               .get('http://localhost:8081/statistics/All')
               .then((response) => {
                 const fleetid = response.data;
@@ -222,25 +256,25 @@ export default {
                 const Acount = response.data;
                 console.log('获取的 Acount:', Acount);
                 this.Acount = Acount.count + 1;
-                const requestData3 = {
+                const requestData4 = {
                   statisticsId: this.Acount,
                   fleetId: this.fleetid,
                   driverId: this.userid,
-                  month: formattedDate1 + 'T' + formattedTime1,
+                  month: combinedDateTime,
                   trips: 0,
                 };
-                console.log('requestData3',requestData3)
-                // axios
-                //   .post('/statistics/add', requestData3)
-                //   .then((response) => {
-                //     // 请求成功回调
-                //     const addedCarRequest = response.data;
-                //     console.log('添加成功:', addedCarRequest);
-                //   })
-                //   .catch((error) => {
-                //     // 请求失败回调
-                //     console.error('添加失败:', error);
-                //   });
+                console.log('requestData3',requestData4)
+                axios
+                  .post('/statistics/add', requestData4)
+                  .then((response) => {
+                    // 请求成功回调
+                    const addedCarRequest = response.data;
+                    console.log('statistics添加成功:', addedCarRequest);
+                  })
+                  .catch((error) => {
+                    // 请求失败回调
+                    console.error('添加失败:', error);
+                  });
               })
               .catch((error) => {
                 console.error('获取 countd 失败:', error);

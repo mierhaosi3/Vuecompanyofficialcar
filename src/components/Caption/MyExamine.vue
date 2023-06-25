@@ -47,6 +47,9 @@
 </template>
 
 <script>
+import axios from 'axios';
+import moment from 'moment';
+
 export default {
   name: 'ApprovalPage',
   data() {
@@ -56,7 +59,11 @@ export default {
       Turndate:'',
       formValues: {}, // 添加一个用于存储表单值的对象
       carRequestData: [],
-      token:''
+      token:'',
+      approvalrecordsid:'',
+      TurnNowdate:'',
+      requesid:'',
+      approverid:'',
     };
   },
   mounted() {
@@ -122,6 +129,41 @@ export default {
           // 处理错误
           console.error(error); 
         });
+
+      // const formattedTime = moment(this.TurnNowdate).format('YYYY-MM-DD HH:mm:ss');
+      this.TurnNowdate = this.formatNowDateTime();
+
+      axios
+          .get('http://localhost:8081/approvalrecords/count')
+          .then((response) => {
+            const approvalrecordsid = response.data;
+            console.log('获取的 approvalrecordsid:', approvalrecordsid);
+            this.approvalrecordsid = approvalrecordsid.count + 1;
+            const requestData4 = {
+              recordId: this.approvalrecordsid,
+              requestId: this.requesid,
+              approverId: this.approverid,
+              approvalTime: this.TurnNowdate,
+              result: '未审批',
+            };
+            console.log(requestData4)
+
+            axios
+              .post('/approvalrecords/add', requestData4)
+              .then((response) => {
+                // 请求成功回调
+                const adddispatchprocess = response.data;
+                console.log('添加成功:', adddispatchprocess);
+              })
+              .catch((error) => {
+                // 请求失败回调
+                console.error('添加失败:', error);
+              });
+          })
+          .catch((error) => {
+            console.error('获取 requestid 失败:', error);
+          });
+      
     },
     async showCarRequestTable() {
       this.currentMenu = 'carRequest';
@@ -146,7 +188,6 @@ export default {
       this.dataBlocks = this.carRequestData.map((data, index) => {
       this.Stringdate = data[0].startTime;
       this.Turndate = this.formatDateTime ();
-
       // 获取今天的日期
       const today = new Date();
       today.setHours(0, 0, 0, 0); // 将时间部分设为 00:00:00，只比较日期部分
@@ -159,11 +200,12 @@ export default {
       const sevenDaysLater = new Date();
       sevenDaysLater.setDate(today.getDate() + 7);
       sevenDaysLater.setHours(0, 0, 0, 0); // 将时间部分设为 00:00:00，只比较日期部分
-
       if (
         (data[0].status === '待审批' || data[0].status === '未审批') &&
         requestDate >= today && requestDate <= sevenDaysLater
       ) {
+        this.approverid = data[0].applicantId;
+        this.requesid = data[0].requestId;
         return {
           id: index + 1,
           title: `数据块${index + 1}`,
@@ -190,7 +232,6 @@ export default {
     },
     formatDateTime() {
         // 使用逗号分隔的字符串拆分为数组
-        
         const dateTimeArray = Object.values(this.Stringdate);
         // 提取数组中的年、月、日、小时和分钟
         const year = dateTimeArray[0];
@@ -211,6 +252,28 @@ export default {
         return `${year}-${formattedMonth}-${formattedDay} ${formattedHour}:${formattedMinute}:00`;
 
       },
+      formatNowDateTime() {
+        const currentDateTime = new Date(); // 获取当前时间
+
+        // 提取当前年、月、日、小时和分钟
+        const year = currentDateTime.getFullYear();
+        const month = currentDateTime.getMonth() + 1; // 月份从0开始，因此要加1
+        const day = currentDateTime.getDate();
+        const hour = currentDateTime.getHours();
+        const minute = currentDateTime.getMinutes();
+
+        // 将月份和日期补零，确保为两位数
+        const formattedMonth = String(month).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
+
+        // 将小时和分钟补零，确保为两位数
+        const formattedHour = String(hour).padStart(2, '0');
+        const formattedMinute = String(minute).padStart(2, '0');
+
+        // 返回格式化后的日期时间字符串
+        return `${year}-${formattedMonth}-${formattedDay}T${formattedHour}:${formattedMinute}:00`;
+      },
+
       formatDateTimeAddSenven() {
         const dateTimeArray = Object.values(this.Stringdate);
         const year = dateTimeArray[0];

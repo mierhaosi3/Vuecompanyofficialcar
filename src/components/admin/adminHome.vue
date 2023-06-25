@@ -82,6 +82,7 @@
                 <div class="search-wrapper">
                   <el-input v-model="searchValue" placeholder="请输入职务或用户名" class="search-input"></el-input>
                   <el-button type="primary" size="small" @click="handleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                  <el-button type="primary" size="small" @click="exportToExcel">导出Excel</el-button>
                 </div>
               </div>
               
@@ -125,6 +126,37 @@
                   <el-input v-model="searchValue" placeholder="请输入车队名称" class="search-input"></el-input>
                   <el-button type="primary" size="small" @click="FleethandleSearch" class="search-button" style="height: 32px;">查询</el-button>
                 </div>
+                <div class="search-wrapper">
+                  <el-button type="primary" size="small" class="search-button" @click="clickAddFleet"
+                    style="height: 32px;">新增</el-button>
+  
+                  <el-dialog v-model="dialogVisible" title="新增车队信息" width="30%" :before-close="handleClose">
+                    <!-- <el-form :model="ruleFormFleet" :rules="rules" ref="ruleFormFleet" class="demo-ruleForm"> -->
+                    <!-- rules还没写 -->
+                    <el-form :model="ruleFormFleet" ref="ruleFormFleet" class="demo-ruleForm">
+                      <el-form-item label="车队编号" prop="fleetid" required>
+                        <el-input v-model="ruleFormFleet.fleetid" placeholder="请输入车队编号" />
+                      </el-form-item>
+                      <el-form-item label="车队名称" prop="fleetname" required>
+                        <el-input v-model="ruleFormFleet.fleetname" placeholder="请输入车队名称" />
+                      </el-form-item>
+                      <el-form-item label="队长编号" prop="captainid" required>
+                        <el-select v-model="ruleFormFleet.captainid" placeholder="请选择队长编号">
+                          <el-option v-for="i in captainidArr" :key="i.value" :label="i.label" :value="i.value" :formatter="formatCaptainLabel">
+                          </el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-form>
+                    <template #footer>
+                      <span class="dialog-footer">
+                        <el-button @click="dialogVisible = false">取消</el-button>
+                        <el-button type="primary" @click="dialogVisible = false">
+                          确认
+                        </el-button>
+                      </span>
+                    </template>
+                  </el-dialog>
+                </div>
               </div>
               <el-table :data="fleetData" stripe>
                 <el-table-column prop="fleetid" label="车队ID"></el-table-column>
@@ -151,6 +183,39 @@
                 <div class="search-wrapper">
                   <el-input v-model="searchValue" placeholder="请输入车队名" class="search-input"></el-input>
                   <el-button type="primary" size="small" @click="VehiclehandleSearch" class="search-button" style="height: 32px;">查询</el-button>
+                </div>
+                <div class="search-wrapper">
+                  <el-button type="primary" size="small" class="search-button" @click="clickAddVehicle"
+                    style="height: 32px;">新增</el-button>
+  
+                  <el-dialog v-model="dialogVisible"  title="新增车辆信息" width="30%">
+                    <!-- <el-form :model="ruleFormFleet" :rules="rules" ref="ruleFormFleet" class="demo-ruleForm"> -->
+                    <!-- rules还没写 -->
+                    <el-form :model="ruleFormVehicle" ref="ruleFormVehicle" class="demo-ruleForm">
+                      <el-form-item label="车辆编号" prop="vehicleid" required>
+                        <el-input v-model="ruleFormVehicle.vehicleid" placeholder="请输入车辆编号" />
+                      </el-form-item>
+                      <el-form-item label="车辆类型" prop="vehicletype" required>
+                        <el-select placeholder="请选择车辆类型">
+                          <el-option v-for="i in vehicletypeArr" :label="i.vehicletype"
+                            :value="i.vehicletype"></el-option>
+                        </el-select>
+                      </el-form-item>
+                      <el-form-item label="车队编号" prop="fleetid" required>
+                        <el-select placeholder="请选择车队编号">
+                          <el-option v-for="i in fleetidArr" :label="i.fleetid" :value="i.fleetid"></el-option>
+                        </el-select>
+                      </el-form-item>
+                    </el-form>
+                    <template #footer>
+                      <span class="dialog-footer">
+                        <el-button @click="dialogVisible = false">取消</el-button>
+                        <el-button type="primary" @click="dialogVisible = false">
+                          确认
+                        </el-button>
+                      </span>
+                    </template>
+                  </el-dialog>
                 </div>
               </div>
               <el-table :data="vehicleData" stripe>
@@ -293,12 +358,16 @@
             </template>
             <template v-else-if="currentMenu === 'statistics'">
               <h3>统计数据表</h3>
+              <div class="search-container">
+                <div class="search-wrapper">
+                  <el-button type="primary" size="small" @click="exportStatisticsToExcel">导出Excel</el-button>
+                </div>
+              </div>
               <el-table :data="statisticsData" stripe>
                 <el-table-column prop="statisticsid" label="统计ID"></el-table-column>
                 <el-table-column prop="fleetid" label="车队ID"></el-table-column>
                 <el-table-column prop="driverid" label="司机ID"></el-table-column>
-                <el-table-column prop="month" label="月份"></el-table-column>
-                <el-table-column prop="trips" label="行程数"></el-table-column>
+                <el-table-column prop="finishtime" label="出车时间"></el-table-column>
               </el-table>
             </template>
           </el-scrollbar>
@@ -310,8 +379,7 @@
   <script>
   import qs from 'qs';
   import axios from 'axios';
-
-
+  import ExcelJS  from 'exceljs';
 
   export default {
     data() {
@@ -345,7 +413,51 @@
         previousCarRequestCount: null,
         timer: null,
         notificationPosition: 'top-right', 
-        notificationOffset: 20 
+        notificationOffset: 20 ,
+
+        dialogVisible: false,
+        ruleFormFleet: {
+          fleetid: '',
+          fleetname: '',
+          captainid: '',
+        },
+        ruleFormVehicle: {
+          vehicleid: '',
+          vehicletype: '',
+          fleetid: '',
+        },
+
+        captainidArr: {},
+        vehicletypeArr: {},
+        fleetidArr: {},
+
+        rules: {
+          fleetid: [{
+            required: true,
+            message: '请输入车队编号',
+            trigger: 'blur',
+          }, ],
+          fleetname: [{
+            required: true,
+            message: '请输入车队名称',
+            trigger: 'blur',
+          }, ],
+          captainid: [{
+            required: true,
+            message: '请选择队长编号',
+            trigger: 'change',
+          }, ],
+          vehicleid: [{
+            required: true,
+            message: '请选择车辆编号',
+            trigger: 'change',
+          }, ],
+          vehicletype: [{
+            required: true,
+            message: '请选择车辆类型',
+            trigger: 'change',
+          }, ],
+        },
       };
     },
     mounted() {
@@ -420,6 +532,72 @@
           this.userProfileData[i]={userid:this.jsonuserProfileData[i][0],username:this.jsonuserProfileData[i][1],usertype:this.jsonuserProfileData[i][2],avatar:this.jsonuserProfileData[i][3],name:this.jsonuserProfileData[i][4]}
         }
         this.jsondata=[];
+      },
+      async exportToExcel() {
+        // 创建工作簿对象
+        const workbook = new ExcelJS.Workbook();
+        // 创建工作表对象
+        const worksheet = workbook.addWorksheet('个人信息表');
+        // 设置表头
+        const headers = [
+          { header: '用户ID', key: 'userid', width: 10 },
+          { header: '用户名', key: 'username', width: 15 },
+          { header: '职务', key: 'usertype', width: 10 },
+          { header: '详细信息', key: 'name', width: 15 },
+          { header: '姓名', key: 'avatar', width: 10 },
+        ];
+
+        worksheet.columns = headers;
+
+        // 添加数据
+        const userProfileData = this.userProfileData;
+        userProfileData.forEach((data) => {
+          worksheet.addRow(data);
+        });
+        // 导出工作簿为Excel文件
+        const buffer = await workbook.xlsx.writeBuffer();
+        // 创建Blob对象
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        // 创建临时下载链接
+        const downloadLink = document.createElement('a');
+        downloadLink.href = window.URL.createObjectURL(blob);
+        downloadLink.download = '个人信息表.xlsx';
+        // 模拟点击下载链接
+        downloadLink.click();
+        // 释放URL对象
+        window.URL.revokeObjectURL(downloadLink.href);
+      },
+      async exportStatisticsToExcel() {
+        // 创建工作簿对象
+        const workbook = new ExcelJS.Workbook();
+        // 创建工作表对象
+        const worksheet = workbook.addWorksheet('出车记录表');
+        // 设置表头
+        const headers = [
+          { header: '统计ID', key: 'statisticsid', width: 10 },
+          { header: '车队ID', key: 'fleetid', width: 15 },
+          { header: '司机ID', key: 'driverid', width: 10 },
+          { header: '出车时间', key: 'finishtime', width: 15 },
+        ];
+
+        worksheet.columns = headers;
+        // 添加数据
+        const statisticsData = this.statisticsData;
+        statisticsData.forEach((data) => {
+          worksheet.addRow(data);
+        });
+        // 导出工作簿为Excel文件
+        const buffer = await workbook.xlsx.writeBuffer();
+        // 创建Blob对象
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        // 创建临时下载链接
+        const downloadLink = document.createElement('a');
+        downloadLink.href = window.URL.createObjectURL(blob);
+        downloadLink.download = '出车记录表.xlsx';
+        // 模拟点击下载链接
+        downloadLink.click();
+        // 释放URL对象
+        window.URL.revokeObjectURL(downloadLink.href);
       },
       handleAdd() {
       // 执行新增操作
@@ -734,6 +912,124 @@
             // 处理错误
             console.error(error);
           });
+      },
+      clickAddFleet() {
+        this.dialogVisible = true
+        console.log('clickAddFleet')
+        axios.get('http://localhost:8081/fleet/profile').then((res) => {
+          console.log(res.data)
+          var str = ''
+          for (var i = 0; i < res.data.length; i++) {
+            str += res.data[i].toString().split(',')[0];
+          }
+          var tmparr = str.split('')
+          var arr = Array.from(new Set(tmparr))
+
+          var jsa = []
+          for (var i = 0; i < arr.length; i++) {
+            if(arr[i]==3){
+              var jso = {}
+              jso['label'] ='user3'
+              jso['value'] = arr[i]
+              jsa.push(jso)
+            }else if(arr[i]==4){
+              var jso = {}
+              jso['label'] ='司机2'
+              jso['value'] = arr[i]
+              jsa.push(jso)
+            }else{
+              var jso = {}
+              jso['label'] = arr[i]
+              jso['value'] = arr[i]
+              jsa.push(jso)
+            }
+          }
+          console.log(jsa)
+          this.captainidArr = jsa
+        })
+      },
+
+      clickAddVehicle() {
+        this.dialogVisible = true
+        axios.get('http://localhost:8081/vehicles/All').then((res) => {
+          var str1 = ''
+          for (var i = 0; i < res.data.length; i++) {
+            str1 += res.data[i]['vehicletype'].toString();
+            str1 += ','
+          }
+          var tmparr1 = str1.split(',')
+          var arr1 = Array.from(new Set(tmparr1))
+
+          var jsa1 = []
+          for (var i = 0; i < arr1.length - 1; i++) {
+            var jso = {}
+            jso['vehicletype'] = arr1[i]
+            jsa1.push(jso)
+          }
+          this.vehicletypeArr = jsa1
+          var str2 = ''
+          for (var i = 0; i < res.data.length; i++) {
+            str2 += res.data[i]['fleetid'].toString();
+            str2 += ','
+          }
+          var tmparr2 = str2.split(',')
+          var arr2 = Array.from(new Set(tmparr2))
+
+          var jsa2 = []
+          for (var i = 0; i < arr2.length - 1; i++) {
+            if(arr2[i]==1){
+              
+            }
+            var jso = {}
+            jso['fleetid'] = arr2[i]
+            jsa2.push(jso)
+          }
+          this.fleetidArr = jsa2
+        })
+      },
+      submitFleet(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            let params = this.ruleFormFleet
+            let url =
+              '/fleet/insert'; //通常本地开发会遇到跨域问题，所以我们需要在config的index.js里面配置proxyTable反向代理，具体详情自行百度，有很多很清楚的讲解与写法。
+            console.log(params.captainid)
+            console.log(params.fleetid)
+            console.log(params.fleetname)
+
+            this.axios
+              .post(url, params)
+              .then(() => {
+                this.dialogVisible = true;
+              })
+              .catch((error) => {
+                // 请求失败回调
+                console.error('添加失败:', error);
+              });
+          }
+        })
+      },
+      submitVehicle(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            let params = this.ruleFormVehicle
+            let url =
+              '/vehicles'; //通常本地开发会遇到跨域问题，所以我们需要在config的index.js里面配置proxyTable反向代理，具体详情自行百度，有很多很清楚的讲解与写法。
+            console.log(params.fleetid)
+            console.log(params.vehicleid)
+            console.log(params.vehicletype)
+
+            this.axios
+              .post(url, params)
+              .then(() => {
+                this.dialogVisible = true;
+              })
+              .catch((error) => {
+                // 请求失败回调
+                console.error('添加失败:', error);
+              });
+          }
+        })
       },
       FleethandleSearch() {
         console.log(this.searchValue);
@@ -1322,16 +1618,20 @@
             statisticsid: 1,
             fleetid: 1,
             driverid: 1,
-            month: 6,
+            finishtime:'2023-06-10 09:00:00',
             trips: 10,
           },
           // 其他统计数据
         ];
         await this.fetchTableData('http://localhost:8081/statistics/Allprofile', 'statisticsData');
         this.statisticsData=this.jsondata;
+
         for(var i=0;i<this.jsondata.length;i++){
+          var date = this.statisticsData[i][3].join(',');
+          this.Stringdate = date
+          date = this.formatDateTime()
           this.statisticsData[i]={statisticsid:this.statisticsData[i][0],fleetid:this.statisticsData[i][1],driverid:this.statisticsData[i][2],
-                                  month:this.statisticsData[i][3],trips:this.statisticsData[i][4]}
+                                  finishtime:date,trips:this.statisticsData[i][4]}
                                 }
                                 this.jsondata=[];
       },

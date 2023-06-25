@@ -155,7 +155,7 @@
         }
       },
       redirectToFinishPage() {
-        this.$router.push("/DriverLists");
+        this.$router.push("/DriverList");
     },
       editValue(row) {
         row.editable = true;

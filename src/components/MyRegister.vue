@@ -135,6 +135,20 @@ export default {
                 message: res.data.msg,
                 type: "success",
               });
+              this.axios({
+                  url: `user/profileName?username=${_this.ruleForm.uname}`,
+                  method: "get",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }).then((response) => {
+                  console.log(response);
+                  var length = response.data.length; // 假设后端返回的userid在response.data.userid中
+                  const userid = response.data[length-1][0]
+                  this.$alert(`你的userid号为${userid}，请谨慎保存`, "提示", {
+                    confirmButtonText: "确定",
+                  });
+                });
             }else{  // 当响应的编码不为 0 时，说明注册失败
               // 显示后端响应的失败信息
               this.$message({

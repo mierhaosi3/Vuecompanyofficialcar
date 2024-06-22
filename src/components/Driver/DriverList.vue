@@ -260,6 +260,7 @@ export default {
       console.log(this.token)
       // 如果本地存储中没有userid，则使用默认值或其他方式获取userid
       this.userid = this.$store.state.userid;
+      console.log(this.userid)
       const response = await axios.get(`http://localhost:8081/dispatchprocess/drivers/${this.userid}`,{
             headers:{
             "token": `${this.token}` // 在请求头中携带 token

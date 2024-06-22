@@ -1,7 +1,7 @@
 <template>
   <div class="form-container">
     <el-button type="primary" @click="MyInformation" class="header-button">跳转至个人信息</el-button>
-    <el-button type="primary" @click="UserResponseDone" class="header-button">跳转</el-button>
+    <el-button type="primary" @click="UserResponseDone" class="header-button">我的申请</el-button>
     <el-form :model="ruleForm" :rules="rules" ref="ruleForm" class="demo-ruleForm">
       <el-form-item label="申请理由" prop="reason">
         <el-select v-model="ruleForm.reason" placeholder="请选择理由">
